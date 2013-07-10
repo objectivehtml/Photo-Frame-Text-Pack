@@ -1,0 +1,11 @@
+.photo-frame-text-list-item { position: relative; list-style: none; padding: 3px 0 10px 3px; border-bottom: 1px solid rgb(71, 71, 69); box-shadow: 1px 0 0 black inset; margin-bottom: 5px; }
+.photo-frame-text-list-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 5px; }
+
+.photo-frame-font-pack .photo-frame-text-actions { float: right; margin: 0 0px 5px 0px; }
+.photo-frame-font-pack .photo-frame-text-actions a { font-size: 13px; color: rgb(160, 160, 160); border-right: 1px solid rgb(71, 71, 69); padding: 5px 10px; text-decoration: none; }
+.photo-frame-font-pack .photo-frame-text-actions a:last-child { border-right: none; box-shadow: 1px 0 0 black inset; }
+.photo-frame-font-pack .photo-frame-text-actions a:hover { color: white; text-decoration: none; }
+
+.photo-frame-tool-window.photo-frame-font-pack .photo-frame-tool-window-content { max-height: 250px; overflow-y: auto;}
+.photo-frame-text-label-wrapper .ui-icon { background-image: none; }
+.photo-frame-text-label-wrapper .photo-frame-textarea { overflow: hidden; }
