@@ -9,3 +9,5 @@
 .photo-frame-tool-window.photo-frame-font-pack .photo-frame-tool-window-content { max-height: 250px; overflow-y: auto;}
 .photo-frame-text-label-wrapper .ui-icon { background-image: none; }
 .photo-frame-text-label-wrapper .photo-frame-textarea { overflow: hidden; }
+.photo-frame-font-styles .photo-frame-row { margin-bottom: .4em; }
+.photo-frame-font-styles .photo-frame-color-picker { margin-bottom: .25em; }

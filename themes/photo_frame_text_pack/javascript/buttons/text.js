@@ -60,6 +60,12 @@
 		icon: 'font',
 		
 		/**
+		 * Has the window fully initialized
+		 */
+		
+		init: false,
+		
+		/**
 		 * An array of labels
 		 */
 		
@@ -102,7 +108,6 @@
 		constructor: function(buttonBar) {
 			var t = this;
 
-			this.labels 			  = [];
 			this.name				  = PhotoFrame.Lang.text;
 			this.description		  = PhotoFrame.Lang.text_desc;
 			this.windowSettings.title = PhotoFrame.Lang.text;
@@ -142,6 +147,7 @@
 				italic: this.getItalic()
 			});
 			this.labels.push(this.label);
+			this.save(this.getData());
 		},
 
 		startCrop: function() {
@@ -157,6 +163,7 @@
 			this.labels = []
 			this.updateJson();
 			this.reset();
+			this.save(this.getData());
 		},
 
 		removeLabels: function() {
@@ -190,15 +197,13 @@
 		},
 
 		reset: function() {
-			$.each(this.labels, function(i, label) {
-				label.remove(true);
-			});
+			this.removeLabels();
 			this.window.ui.content.html('<p class="'+this.classes.error+'"><i class="icon-warning-sign"></i> There are no text labels on this photo.</p>');
-			this.removeManipulation();
+			//this.removeManipulation();
 		},
 
 		getData: function() {
-			var data = [];
+			var data = [], t = this;
 
 			$.each(this.labels, function(i, label) {
 				if(typeof label == "object" && !label.removed) {
@@ -218,7 +223,7 @@
 							'<i class="icon-edit"></i>',
 						'</a>',
 						'<a href="#" class="'+this.classes.toggle+'">',
-							'<i class="icon-eye"></i>',
+							'<i class="'+(label.visible ? 'icon-eye' : 'icon-eye-off')+'"></i>',
 						'</a>',
 						'<a href="#" class="'+this.classes.trash+'">',
 							'<i class="icon-trash"></i>',
@@ -249,15 +254,19 @@
 
 			this.window.ui.content.append(list);
 
-			this.bind('labelToggle', function(label, visibility) {
+			this.bind('labelToggle', function(label, visibility, data) {
 				if(!visibility) {
-					label.ui.listItem.find('.'+t.classes.toggle+' i').removeClass('icon-eye')	
-																	 .addClass('icon-eye-off');
+					label.position = data.position;
+					label.ui.listItem.find('.'+t.classes.toggle+' i').removeClass('icon-eye').addClass('icon-eye-off');
+					
+					console.log(t.getData()[0].position);
+
+					t.save(t.getData());
 				}
 				else {					
 					t.showManipulation();
-					label.ui.listItem.find('.'+t.classes.toggle+' i').removeClass('icon-eye-off')	
-																	 .addClass('icon-eye');
+					label.ui.listItem.find('.'+t.classes.toggle+' i').removeClass('icon-eye-off').addClass('icon-eye');
+					t.save(t.getData());
 				}
 			});
 
@@ -300,7 +309,29 @@
 				}
 			});
 
+			if(this.fontHasItalic()) {
+				this.enableItalic();
+			}
+			else {
+				this.disableItalic();
+				this.resetItalic();
+			}
+
 			this.buttonBar.factory.trigger('fontWindowWeightChange', t, t.getWeightInt());
+		},
+
+		fontHasItalic: function() {
+			var font    = this.getFontApi();
+			var _return = false;
+			if(font) {
+				$.each(font.styles, function(i, style) {
+					if(style.italic) {
+						_return = true;
+					}
+				});
+			}
+
+			return _return;
 		},
 
 		getColor: function() {
@@ -328,7 +359,7 @@
 		},
 
 		getFontApi: function(family) {
-			var fonts  = this.getFontApis();;
+			var fonts  = this.getFontApis();
 			family     = family ? family : this.getFamily();
 
 			if(fonts[family]) {
@@ -381,12 +412,25 @@
 			this.colorPicker.setColor(color);
 		},
 
+		enableItalic: function() {
+			this.fontWindow.ui.italic.attr('disabled', false);
+		},
+
+		disableItalic: function() {
+			this.fontWindow.ui.italic.attr('disabled', true);
+		},
+
 		setItalic: function(value) {
 			this.fontWindow.ui.italic.attr('checked', value);
+			this.buttonBar.factory.trigger('fontWindowItalicChange', this, value);
 		},
 
 		getItalic: function() {
 			return this.fontWindow.ui.italic.attr('checked') ? true : false;
+		},
+
+		resetItalic: function() {
+			this.setItalic(false);
 		},
 
 		buildWindow: function() {	
@@ -474,9 +518,20 @@
 			});
 
 			this.bind('labelDelete', function(label) {
+				var labels = [];
+
 				if(t.window.ui.content.find('li').length == 0) {
 					t.reset();
-				}			
+				}
+				
+				$.each(t.labels, function(i, obj) {
+					if(!obj.removed) {
+						labels.push(obj);
+					}
+				});
+
+				t.labels = labels;
+				t.save(t.getData());
 			});
 
 			this.bind('labelBlur', function(label) {
@@ -493,11 +548,44 @@
 
 			this.bind('cancel', function() {
 				t.reset();
+				t.init = false;
+			});
+
+			this.bind('save', function() {
+				t.init = false;
+			});
+
+			this.bind('startCropBegin', function() {
+				t.init = false;
+			});
+
+			this.bind('startCropEnd', function(obj, img) {
+				if(t.getManipulation()) {
+					$.each(t.getManipulation().data, function(i, data) {
+						data.id = t.fontWindowId;
+						data.fontWindow = t.fontWindow;
+						t.label = new PhotoFrame.Label(t.cropPhoto(), data);
+						t.labels.push(t.label);
+					});
+					t.save(t.getData());
+				}
+				t.init = true;
 			});
 
 			this.bind('labelSave', function(label, data) {
+				if(t.init) {
+					t.save(t.getData());
+				}
+			});
+
+			this.bind('labelDrag', function() {
 				t.save(t.getData());
 			});
+
+			this.bind('labelResize', function() {
+				t.save(t.getData());
+			});
+
 		}
 	});
 

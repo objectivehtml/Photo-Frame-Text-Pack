@@ -70,6 +70,13 @@
 		},
 
 		/**
+		 * The default position of the label (object with top and left keys)
+		 * Example: {top: 400: left 200}
+		 */
+		
+		position: false,
+
+		/**
 		 * The PhotoFrame.Photo object
 		 */
 		
@@ -114,8 +121,10 @@
 			this.zIndex      	= t.getIndex();
 			this.photo 	     	= photo;
 			this.ui          	= {};
+			this.position       = false;
 			this.notDragging 	= true;
 			this.isHighlighting = false;
+			this.fontWindow     = false;
 
 			this.base(options);
 			this.callbacks = $.extend(true, {}, this.callbacks, optionCallbacks);
@@ -131,7 +140,7 @@
 			this.ui.textarea = html.find('.photo-frame-textarea');
 			this.ui.cover    = html.find('.photo-frame-text-label-cover');
 
-			this.ui.wrapper.css({zIndex: this.zIndex});
+			this.ui.wrapper.css('z-index', this.zIndex);
 
 			this.photo.ui.cropPhoto.parent().parent().append(this.ui.wrapper);
 
@@ -286,8 +295,15 @@
 				}
 			});
 
-			this.setStyles();
-			this.center();
+			this.setStyles(false);
+
+			if(!this.position) {
+				this.center();
+			}
+			else {
+				this.ui.wrapper.css(this.position);
+			}
+
 			this.addHighlightClass();
 
 			if(this.isDisabled()) {
@@ -309,14 +325,15 @@
 				family: this.getFamily(),
 				weight: this.getWeight(),
 				size: this.getSize(),
-				position: this.getPosition(),
+				position: this.isVisible() ? this.getPosition() : this.position,
 				height: this.getHeight(),
 				width: this.getWidth(),
 				color: this.getColor(),
 				italic: this.getItalic(),
 				disabled: this.isDisabled(),
 				value: this.getText(),
-				zIndex: this.zIndex
+				zIndex: this.zIndex,
+				visible: this.isVisible()
 			};
 		},
 
@@ -330,6 +347,16 @@
 
 		getIndex: function() {
 			return PhotoFrame.Label.zIndexGlobal++;
+		},
+
+		setWidth: function(width) {
+			this.width = width;
+			this.setStyles();
+		},
+
+		setHeight: function(height) {
+			this.height = height;
+			this.setStyles();
 		},
 
 		setColor: function(color) {
@@ -347,7 +374,22 @@
 			this.setStyles();
 		},
 
-		setStyles: function() {
+		setStyles: function(save) {
+
+			if(!this.visible) {
+				this.hide(true);
+			}
+			else {
+				this.show(true);
+			}
+
+			//this.setPosition();
+
+			this.ui.wrapper.css({
+				width: this.width,
+				height: this.height
+			});
+
 			this.ui.textarea.css({
 				color: this.color,
 				fontFamily: this.family,
@@ -355,7 +397,10 @@
 				fontStyle: (this.italic ? 'italic' : 'normal'),
 				fontWeight: this.weight
 			});
-			this.save();
+
+			if(typeof save == "undefined" || save === true) {
+				this.save();
+			}
 		},
 
 		center: function() {
@@ -514,15 +559,22 @@
 			return this.ui.textarea.val(value).html(value);
 		},
 
-		setVisible: function(visibility) {
-			this.visible = visibility;			
+		setVisible: function(visibility, omitTrigger) {
+			var data = this.getData();
+
+			data.visible = visibility;
+			this.visible = visibility;
+
 			if(!this.visible) {
 				this.ui.wrapper.hide();
 			}
 			else {
 				this.ui.wrapper.show();
 			}
-			this.photo.factory.trigger('labelToggle', this, visibility);
+
+			if(typeof omitTrigger == "undefined" || omitTrigger == false) {
+				this.photo.factory.trigger('labelToggle', this, visibility, data);
+			}
 		},
 
 		isVisible: function() {
@@ -538,21 +590,34 @@
 			}
 		},
 
-		show: function() {
-			this.setVisible(true);
+		show: function(omitTrigger) {
+			this.setVisible(true, omitTrigger);
+			//this.setPosition();
 		},
 
-		hide: function() {
-			this.setVisible(false);
+		hide: function(omitTrigger) {
+			this.setVisible(false, omitTrigger);
+		},
+
+		setPosition: function(position) {
+			this.ui.wrapper.css({
+				top: position.top,
+				left: position.left
+			});
 		},
 
 		getPosition: function() {
-			return this.ui.wrapper.position();
+			var position = this.ui.wrapper.position();
+
+			return {
+				left: parseInt(position.left),
+				top: parseInt(position.top)
+			};
 		},
 
 		colorHandler: function(obj, color) {
 			if(this.id == obj.fontWindowId && this.isHighlighted()) {
-				this.setColor(color);
+				this.setColor(typeof color == "string" ? color : color.toHexString());
 			}
 		},
 
@@ -593,7 +658,7 @@
 		},
 
 		getItalic: function() {
-			return this.italic;
+			return this.italic ? this.italic : false;
 		},
 
 		setItalic: function(value) {
