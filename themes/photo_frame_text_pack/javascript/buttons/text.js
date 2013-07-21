@@ -84,6 +84,12 @@
 		name: false,
 		
 		/**
+		 * Name of the package
+		 */
+		
+		packageName: 'text',
+		
+		/**
 		 * The callback response object
 		 */
 		
@@ -586,6 +592,9 @@
 				t.save(t.getData());
 			});
 
+			this.bind('startRendering', function() {
+				t.save(t.getData());
+			});
 		}
 	});
 

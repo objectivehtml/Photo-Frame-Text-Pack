@@ -49,6 +49,12 @@
 		family: false,
 
 		/**
+		 * The font size unit (of measure). (px|pt)
+		 */
+		
+		fontSizeUnit: 'pt',
+
+		/**
 		 * The font window object (PhotFrame.Window)
 		 */
 		
@@ -295,6 +301,10 @@
 				}
 			});
 
+			this.photo.factory.bind('initCrop', function() {
+				t.ui.wrapper.draggable('option', 'containment', t.photo.ui.cropPhoto);
+			});
+
 			this.setStyles(false);
 
 			if(!this.position) {
@@ -321,18 +331,20 @@
 		},
 
 		getData: function() {
+			var position = this.isVisible() ? this.getPosition() : this.position;
+
 			return {
 				family: this.getFamily(),
 				weight: this.getWeight(),
 				size: this.getSize(),
-				position: this.isVisible() ? this.getPosition() : this.position,
+				position: position,
 				height: this.getHeight(),
 				width: this.getWidth(),
 				color: this.getColor(),
 				italic: this.getItalic(),
 				disabled: this.isDisabled(),
 				value: this.getText(),
-				zIndex: this.zIndex,
+				zIndex: this.getCurrentIndex(),
 				visible: this.isVisible()
 			};
 		},
@@ -347,6 +359,10 @@
 
 		getIndex: function() {
 			return PhotoFrame.Label.zIndexGlobal++;
+		},
+
+		getCurrentIndex: function() {
+			return this.isVisible() ? this.ui.wrapper.css('z-index') : this.zIndex;
 		},
 
 		setWidth: function(width) {
@@ -393,7 +409,7 @@
 			this.ui.textarea.css({
 				color: this.color,
 				fontFamily: this.family,
-				fontSize: this.size,
+				fontSize: this.size + this.fontSizeUnit,
 				fontStyle: (this.italic ? 'italic' : 'normal'),
 				fontWeight: this.weight
 			});
@@ -485,11 +501,15 @@
 		},
 
 		resizeStop: function(t, event, ui) {
+			this.width  = this.ui.wrapper.width();
+			this.height = this.ui.wrapper.height();
+
 			this.callback(t.callbacks.resizeStop, event, ui);
 			this.photo.factory.trigger('labelResizeStop', this, event, ui);
 		},
 
 		resize: function(t, event, ui) {
+			console.log(ui);
 			this.callback(t.callbacks.resize, event, ui);
 			this.photo.factory.trigger('labelResize', this, event, ui);
 		},
@@ -579,6 +599,10 @@
 
 		isVisible: function() {
 			return this.visible;
+		},
+
+		isHidden: function() {
+			return this.isVisible() ? false : true;
 		},
 
 		toggle: function() {
