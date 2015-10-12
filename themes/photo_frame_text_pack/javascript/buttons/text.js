@@ -264,9 +264,6 @@
 				if(!visibility) {
 					label.position = data.position;
 					label.ui.listItem.find('.'+t.classes.toggle+' i').removeClass('icon-eye').addClass('icon-eye-off');
-					
-					console.log(t.getData()[0].position);
-
 					t.save(t.getData());
 				}
 				else {					
